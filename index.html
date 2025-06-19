@@ -1,0 +1,2147 @@
+<!DOCTYPE html>
+<html lang="uz">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Stomatologiya Testi</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            touch-action: manipulation;
+        }
+        .option-btn {
+            transition: all 0.2s ease-in-out;
+        }
+        .option-btn.selected {
+            transform: translateX(10px);
+            background-color: #3b82f6; /* bg-blue-500 */
+            color: white;
+        }
+        .option-btn.correct {
+            background-color: #22c55e; /* bg-green-500 */
+            color: white;
+            border-color: #16a34a; /* border-green-600 */
+        }
+        .option-btn.incorrect {
+            background-color: #ef4444; /* bg-red-500 */
+            color: white;
+            border-color: #dc2626; /* border-red-600 */
+        }
+        .no-select {
+            -webkit-user-select: none; /* Safari */
+            -ms-user-select: none; /* IE 10 and IE 11 */
+            user-select: none; /* Standard syntax */
+        }
+        .quiz-container {
+            max-width: 800px;
+        }
+        .fade-in {
+            animation: fadeIn 0.5s ease-in-out;
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+    </style>
+</head>
+<body class="bg-gray-100 dark:bg-gray-900 text-gray-800 dark:text-gray-200 flex items-center justify-center min-h-screen p-4">
+
+    <div id="quiz-container" class="quiz-container w-full bg-white dark:bg-gray-800 rounded-2xl shadow-2xl p-6 md:p-8 no-select">
+        
+        <!-- Start Screen -->
+        <div id="start-screen" class="text-center">
+            <h1 class="text-3xl md:text-4xl font-bold text-blue-600 dark:text-blue-400 mb-4">Stomatologiya Testiga Xush Kelibsiz!</h1>
+            <p class="text-lg text-gray-600 dark:text-gray-400 mb-8">Jami savollardan 25 tasi tasodifiy tartibda beriladi. Bilimingizni sinab ko'rishga tayyormisiz?</p>
+            <button id="start-btn" class="w-full md:w-auto bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-8 rounded-lg shadow-lg transform hover:scale-105 transition-transform duration-300">
+                Testni Boshlash
+            </button>
+        </div>
+
+        <!-- Quiz Screen -->
+        <div id="quiz-screen" class="hidden">
+            <div class="flex justify-between items-center mb-4">
+                <div id="progress-indicator" class="text-sm font-semibold text-gray-500 dark:text-gray-400">Savol 1 / 25</div>
+                <div id="score-indicator" class="text-sm font-semibold bg-green-100 dark:bg-green-800 text-green-700 dark:text-green-200 py-1 px-3 rounded-full">To'g'ri: 0</div>
+            </div>
+            
+            <div id="question-card" class="mb-6 fade-in">
+                <h2 id="question-text" class="text-xl md:text-2xl font-semibold mb-6 min-h-[80px]"></h2>
+                <div id="options-container" class="space-y-3">
+                    <!-- Options will be dynamically inserted here -->
+                </div>
+            </div>
+
+            <div id="feedback-message" class="text-center font-medium my-4 h-6"></div>
+
+            <button id="next-btn" class="w-full bg-gray-800 dark:bg-gray-200 hover:bg-black dark:hover:bg-white text-white dark:text-black font-bold py-3 px-6 rounded-lg shadow-md transition-colors duration-300 disabled:bg-gray-400 disabled:cursor-not-allowed" disabled>
+                Keyingi savol
+            </button>
+        </div>
+        
+        <!-- Result Screen -->
+        <div id="result-screen" class="text-center hidden">
+            <h2 class="text-3xl font-bold mb-4 text-blue-600 dark:text-blue-400">Test Yakunlandi!</h2>
+            <p class="text-2xl mb-2">Sizning natijangiz:</p>
+            <p id="final-score" class="text-5xl font-extrabold text-green-500 mb-6">0 / 25</p>
+            <p id="final-message" class="text-lg text-gray-600 dark:text-gray-400 mb-8"></p>
+            <button id="restart-btn" class="w-full md:w-auto bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-8 rounded-lg shadow-lg transform hover:scale-105 transition-transform duration-300">
+                Qayta Boshlash
+            </button>
+        </div>
+    </div>
+
+    <script>
+        // --- DATA ---
+        // Raw text data from the complete document.
+        const rawQuizData = `
+        # Sut tishlar sonini aniqlang?
+        +20
+        -28
+        -30
+        -32
+        -24 
+        # Sut tishlarining klinik formulasini tanlang?
+        +I,II,III,IV,V 
+        -2,1,2,3
+        -2,1,0,2 
+        -2,1,0,3
+        -2,1,3,2
+        # Tish qatorini korikdan otkazish qaysi tish guruhlaridan     boshlanadi?
+        +Yuqori jagning ong chaynov tishlaridan
+        -Yuqori  jagning chap chaynov tishlaridan
+        -Pastki  jagning ong chaynov tishlaridan
+        -Pastki  jagning chap chaynov tishlaridan
+        -Yuqori jagning premolyar sohasidan
+        # Sut prikusida tishlarning anatomik formulasini tanlang?
+        +2,1,0,2
+        -I,II,III,IV,V
+        -2,1,0,3
+        -I,II,III,IV
+        -2,1,2,3
+        # Ogiz boshligida qaysi tish birinchi bolib chiqadi?
+        Pastki jagning markaziy kesuv tishi 
+        Yuqori jagning markaziy kesuv tishi 
+        Yuqori jagdagi yon kesuvchi tish 
+        Pastki jagdagi birinchi molyar
+        Yuqori jagdagi birinchi molyar 
+        # Ogiz boshligida  birinchi  yorib chiqadigan doimiy tish ?
+        +       Birinchi molyar
+        Qoziq
+        Markaziy kesuv 
+        Premolyar
+        Yon kesuv 
+        # Qachon solak ajralishini nazorat kilish tavsiya etiladi?
+        + Ovqatdan keyin
+        Ovqatgacha 
+        Ertalab 
+        Kechqurun
+        Kun davomida
+        # Qaysi moddalar tish emali reminerilizatsiyasini taminlaydi?
+        + Kalsiy, fosfor, ftor
+        Natriy, Kaliy, Xlor 
+        Magniy, Ftor, Temir
+        Lizatsim, Amilaza 
+        Hamma javoblar togri
+        # Solakdagi suvning tarkibi (%)?
+        + 98%
+        92%	
+        90% 
+        88% 
+        85%
+        # Kariyes rivojlanishi uchun qulay bolgan pH muhiti?
+        + 3.5
+        7
+        7.5
+        8
+        6
+        # Kariyes paydo bolishining boshlangich  bosqichi:
+        + Ochoqli demineralizatsiya
+        Ochoqli remineralizatsiya
+        Jigarrang dog paydo bolishi
+        Emal gipoplaziyasi
+        Dentinogenezning buzilishi
+        # Tish chotkasini qancha vaqtda almashtirish kerak?
+        + Sun’iy tolalini 1-2 oy, tabiiy tolalini 3-4 oy
+        Sun’iy tolalini 1-2 hafta, tabiiy tolalini 3-4 hafta
+        1 yilda
+        Yarim yilda 
+        5 oyda
+        # Eng kuchli kariyesogen uglevod:
+        + Saxaroza 
+        Glyukoza
+        Fruktoza
+        Laktoza
+        galaktoza
+        # Ftorlak plyonkasini aktivlik muddati?
+        + 12-24 soat
+        2-3 soat
+        2 kun
+        20 minut
+        1 soat
+        # Makro va mikro elementlar kompleksini saqlovchi kariyesga qarshi preparatlar?
+        + Remodent
+        Ftorlak
+        Fitin
+        Revit
+        Elevit
+        # Tarkibida Ca va Mg tuzlar aralashmasini saqlovchi P preparatlari
+        + Fitin
+        Vitaftor
+        Revit
+        Elevit
+        Festal
+        # Qaysi moddalar mexanik bar’er hosil qiladi?
+        + Germetiklar
+        Ftorlak
+        Beladont
+        Suvli dentin
+        Yogli dentin
+        # Qaysi uslubda emalning mikroyemirilishi olib boriladi?
+        + Invaziv
+        Noinvaziv
+        Kimyoviy
+        Ochiq
+        Yopiq
+        # Sut tishlar sonini aniqlang?
+        20
+        28
+        30
+        32
+        24 
+        # Sut tishlarining klinik formulasini tanlang?
+        I,II,III,IV,V
+        2,1,0,3
+        2,1,0,2,
+        I, II,IV,V
+        2,1,2,3
+        # Tish qatorini korikdan otkazish qaysi tish guruhlaridan     boshlanadi?
+        Yuqori jagning ong chaynov tishlaridan
+        Yuqori  jagning chap chaynov tishlaridan
+        Pastki  jagning ong chaynov tishlaridan
+        Pastki  jagning chap chaynov tishlaridan
+        Yuqori jagning premolyar sohasidan
+        # Tekshirishning sub’ektiv usullariga ta’luqli:
+        Soroq
+        Termodiagnostika
+        Zondlash
+        Rentgenologik
+        Palpatsiya
+        # Sut prikusida qaysi tish guruhlari bolmaydi?
+        Premolyarlar
+        Molyarlar
+        Qoziqlar
+        Markaziy kesuvchi
+        yon kesuvchi
+        # Ogiz boshligining profilaktik korigi nimadan boshlanadi?
+        Tashqi korikdan 
+        Ogiz boshligi dahlizini korigi 
+        Yuganchalar korigi
+        Til korigi
+        Prikus holatini aniqlash
+        # Sut prikusida tishlarning anatomik formulasini tanlang?
+        -        2,1,0,2 
+        2,1,2,3
+        +       I,II,III,IV,V
+        2,1,0,3
+        2,1,2,3
+        # Yuqori lab yuganchasining kaltaligi qaysi patologik jarayonga olib  keladi?
+        Diastema
+        Fiziologik trema
+        Patologik trema
+        Chuqur prikus
+        Progeniya
+        # Ogiz boshligida qaysi tish birinchi bolib chiqadi?
+        Pastki jagning markaziy kesuv tishi 
+        Yuqori jagning markaziy kesuv tishi 
+        Yuqori jagdagi yon kesuvchi tish 
+        Pastki jagdagi birinchi molyar
+        Yuqori jagdagi birinchi molyar 
+        # Ogiz boshligida  birinchi  yorib chiqadigan doimiy tish ?
+        Birinchi molyar
+        Qoziq
+        Markaziy kesuv 
+        Premolyar
+        Yon kesuv 
+        # Qachon solak ajralishini nazorat kilish tavsiya etiladi?
+        Ovqatdan keyin
+        Ovqatgacha 
+        Ertalab 
+        Kechqurun
+        Kun davomida
+        # Qaysi moddalar tish emali reminerilizatsiyasini taminlaydi?
+        Kaltsiy, fosfor, ftor
+        Natriy, Kaliy, Xlor 
+        Magniy, Ftor, Temir
+        Lizatsim, Amilaza 
+        Hamma javoblar togri 
+        # Solakdagi suvning tarkibi (%)?
+        98%
+        92%	
+        90% 
+        88% 
+        85%
+        # Bolalarda normada solak muhiti qanaqa?
+        Kuchsiz ishqoriy
+        Kislotali
+        Ishqoriy
+        Kuchsiz kislotali
+        orta kislotali 
+        # Sutkada normada qancha solak ajraladi?
+        500 ml
+        1litr
+        200ml
+        1.5 litr
+        2 litr
+        # Kariyes rivojlanishi uchun qulay bolgan pH muhiti?
+        3.5
+        7
+        7.5
+        8
+        6
+        # Ogiz boshligi gigiyenasining qoniqarsiz holatida pH qanday ozgaradi?
+        Pasayadi
+        Oshadi
+        Ozgarmaydi
+        Tez kotariladi
+        Bir kotarilib, bir tushadi
+        # Qaysi uglevod kariyesogen chaqirish xususiyatiga ega?
+        Saxaroza
+        Fruktoza
+        Glyukoza
+        Deksitranlar
+        Kraxmal
+        # Yetilgan karash qanday mikroorganizmlarni ozida tutadi?
+        Aerob
+        Anaerob
+        Yirigli
+        Zamburuglar
+        Spiroxetalar
+        # Qaysi kimyoviy element kariyesogen chaqiruvchi guruhga kirmaydi?
+        F
+        Au
+        Mg
+        Cu
+        Na
+        # Tuzilish jihatdan milk-usti tish toshi qaysi turiga kiradi?
+        Minerallashgan
+        Minerallashmagan 
+        Fermentlashgan
+        Zardobsimon
+        Solaksimon
+        #Ozida kop mikroorganizmlarni  saqlaydi:
+        Tish blyashkasi
+        Pellikula
+        Tish karashi
+        Yashil karash 
+        Tish toshi
+        # Tish blyashkasi ozida saqlamaydi?
+        Solak oqsillari
+        Suv
+        Makrofaglar
+        Mikroorganizmlar
+        Ovqat qoldiqlari
+        # Qanday mikroorganizmlar tish karashlarida   eng kop boladi?
+        Tish blyashkasida
+        Pellikulada
+        Milk osti tish toshlarida
+        Milk usti tish toshlarida
+        Kutikulada
+        # Malakali gigiyena otkazilgandan keyin  qancha vaqtda tish pellikulasi    tiklanadi?
+        Bir necha soatdan keyin
+        Bir necha minutdan keyin
+        Bir oydan keyin
+        Bir sutkadan keyin
+        2-3haftadan keyin
+        # Tish karashlarining qaysi biri mikrorganizmlarni tutmaydi?
+        Pellikula
+        Tish blyashkasi
+        Yumshoq tish karashlari
+        Kutikula
+        Tish toshi
+        # Tish blyashkasi qaysi yuzalarda koproq uchraydi?
+        Kontakt va boyin oldi yuzalarida
+        Tish ekvatorida
+        Chaynov qismida
+        Distal yuzada
+        Molyar tishlarning til yuzasida
+        # Milk osti tish toshining shakllanishining  asosiy manbasi?
+        Solak
+        Limfa
+        Ovqat qoldiqlari
+        Mikroorganizmlar
+        Qon
+        # Qanday diametrda dogli kariyesni konservativ davolash samarali?
+        3 mm gacha
+        6 mm gacha
+        7 mm gacha
+        8 mm gacha
+        1 sm gacha
+        # Qanday kariyesli doglarda konservativ davo  qollaniladi?
+        Oq
+        Och jigarrang
+        Jigarrang
+        Qora
+        Moviy
+        # Kariyes paydo bolishining boshlangich  bosqichi:
+        Ochoqli demineralizatsiya
+        Ochoqli remineralizatsiya
+        Jigarrang dog paydo bolishi
+        Emal gipoplaziyasi
+        Dentinogenezning buzilishi
+        # Kariyesda emalning otkazuvchanligi:
+        Oshadi
+        Kamayadi
+        Ozgarmaydi
+        Uzoq vaqt kamayadi
+        Ozgarib turadi 
+        # Ogiz boshligi malakali gigiyenasini otkazadi:
+        Shifokor stomatolog
+        Hamshira 
+        Bemorning ozi
+        Tabiyachilar
+        Ota- onalar
+        # Abraziv davolovchi  pastada F   konsentratsiyasi qanday?
+        0,1%
+        0,5%
+        1%
+        3%
+        5%
+        # Milk osti tish karashlari qanday asbobda olinadi?
+        Kyureta
+        Zond
+        Gladilka
+        Emal pichogi
+        Pinset
+        # Tish karashlarini kimyoviy tozalashda qollaniladigan suyuqlik tarkibida qanday moddalar saqlanadi?
+        Kislotalar
+        boyovchi moddalar
+        Yod
+        Ishqorlar
+        Ftor
+        # Ogiz boshligi malakali gigiyenasini otkazishda qatnovlar soni:
+        -       3-4
+        +      1-2
+        2
+        10 
+        6
+        # Tish chotkasi qanday saqlanadi?
+        Stakanda, ishchi qismi yuqorida
+        Stakanda,ishchi qismi pastda
+        Futlyarda
+        Antiseptik eritmada
+        Sovunli eritmada
+        # Tish chotkasini qancha vaqtda almashtirish kerak?
+        Sun’iy tolalini 1-2 oy, tabiiy tolalini 3-4 oy
+        Sun’iy tolalini 1-2 hafta, tabiiy tolalini 3-4 hafta
+        1 yilda
+        Yarim yilda 
+        5 oyda
+        # Tish eleksirlari nima uchun tavsiya qilinadi?
+        Ogiz boshligini chayish uchun
+        Ogiz boshligini tozalash uchun
+        Tishlarni ftorlash uchun 
+        Remterapiya uchun 
+        Emal demineralizatsiyasi uchun 
+        # Qaysi yoshda bolalar floslardan mustaqil foydalanishlari mumkin?
+        9-10 yosh
+        6-7 yosh
+        5-6 yosh
+        15-16 yosh
+        13 yosh
+        # Flos nima uchun tavsiya qilinadi?
+        Tishlarni kontakt yuzasini tozalash uchun
+        Barcha tish yuzasini tozalash uchun
+        Frontal tish yuzasini tozalash uchun
+        Til yuzasini tozalash uchun
+        Tanglay yuzasini tozalash uchun
+        # Elektrik tish chotkasi  harakati  qanday qiladi?
+        Aylanma 
+        Qaytuvchi 
+        Supuruvchi
+        Vertikal
+        Gorizontal
+        # Tish tozaligichlar tishga nisbatan qanday burchakda joylashadi?
+        45o
+        30 o
+        60 o
+        90 o
+        120 o
+        # Tish tozalashning samaradorligi tish pastasini qaysi komponentlariga  bogliq:
+        Abrazivligiga 
+        Gelsimonligiga
+        Kopiksimonligiga
+        Ta’m xususiyatlariga 
+        Dorivor osimliklar eritmasiga
+        # Tish pastalarida F ning optimal konsentratsiyasi:
+        0,1%
+        2 %
+        0,5%
+        5 %
+        0,01%
+        # Ftor birikmalarini 0,01-0,8%  saqlovchi tish pastalarini qollash me’yori
+        1 haftada 1 marta
+        1 kunda 1 marta
+        1 kunda 2 marta
+        1 haftada 3 marta
+        10 kun ketma-ket 
+        # Tish pastasi tarkibidagi tozalash xususiyatiga ega komponentlar:
+        Abrazivlar
+        Kraxmal
+        Kislotalar
+        Glitserin 
+        Stearin
+        # Tish pastasi tarkibiga kiritilgan fermentlar,vitaminlar qanday xususiyatlariga ega. 
+        Regeneratsiya protsesslarini tezlashtirish
+        Bakteritsid ta’sir
+        Solak pH ni normallashtirish
+        Sirkoniy silikati
+        Alyuminiy gidroksidi
+        # Kariyesga qarshi xususiyatga ega komponentlar qoshiladi:
+        Davolash profilaktik tish pastasi
+        Gigiyenik tish pastalariga 
+        Abraziv tish pastalariga
+        Tish kukunlariga
+        Tish tozalagichlarga
+        # Uglevodlar qabul kilish miqdorini oshirilishi  davrlari:
+        Karies jarayonini rivojlanishini oshiradi  
+        Emal remineralizatsiyasining kuchayishiga qarab
+        Emal demineralizatsiyasining kamayishiga qarab
+        Solak rH ning normallashishi
+        Karies rivojlanish jarayonini kamaytiradi
+        # Eng kuchli kariyesogen uglevod:
+        Saxaroza 
+        Glyukoza
+        Fruktoza
+        Laktoza
+        Dekstraza
+        # SHakar qabul qilingandan keyin yuqori konsentratsiyasi qancha vaqt saqlanadi:
+        20-40 min 
+        30-50 min
+        60 min
+        10-15 min
+        5-7 min
+        # Uglevodlarning kariyesogen ta’sirini kamaytirish yoli:
+        Uglevodlar bilan oziqlanishni cheklash 
+        Glyukoza va saxaroza saqlovchi  oziq-ovqatlar miqdorini oshirish
+        Uglevodlar iste’molini vaqtincha cheklash
+        Oziq-ovqatlardan yogni olib tashlash
+        Uglevodli mahsulotlarni kopaytirish
+        # Qattiq ovqatlar iste’mol qilishning axamiati:
+        Ogiz boshligida oz-ozini tozalashni yaxshilash 
+        Solak ajralishini kamaytiradi
+        Solak pH ni normallashtiradi
+        Emal demineralizatsiasini kuchaytiradi
+        Emal qarshiligini kamaytiradi
+        # Kariyes profilaktikasida eng  ommaviy usul?
+        Suvni ftorlash
+        Quyish
+        Kun tartibi
+        Ovqatlanishni muvofiqlashtirish
+        Ratsional ovqatlanish
+        # F ning miqdori me’yorda bolganda ?
+        Tish qattiq toqimasi ideal kristallanadi
+        Tishlar erta yorib chiqadi
+        Tish yorib chiqishi qiyinlashadi
+        Deminerilizatsiya kuchayadi 
+        Emal rezistentligi pasayadi
+        # Qaysi yoshdan boshlab ftor preparatlari buyuriladi?
+        2 yoshdan
+        5 yoshdan
+        1 yoshdan
+        7 yoshdan
+        10 yoshdan
+        # Bexosdan  NaF eritmasi ichib qoyganda nima buyuriladi?
+        3-5% li CaCl2 eritmasi
+        Ca glyukonat tabletkasi
+        10%li  CaCl2 eritmasi
+        Naftizin eritmasi
+        furatsillin eritmasi
+        # Vitaftor qanday   qabul qilinadi?
+        yiliga 2-3 marta
+        yiliga 1 marta
+        yiliga 6 marta
+        yiliga 12 marta
+        yiliga 5 marta
+        # Ftorlak plyonkasini aktivlik muddati?
+        12-24 soat
+        2-3 soat
+        2 kun
+        20 minut
+        1 soat
+        # Ftorlakni profilaktika maqsadida necha marta ishlatish mumkin ?
+        Yiliga 2-4 marta
+        Yiliga 1 marta
+        Yiliga 6 marta
+        Yiliga 12 marta
+        Yiliga 5 marta
+        # Makro va mikro elementlar kompleksini saqlovchi kariyesga qarshi preparatlar?
+        Remodent
+        Ftorlak
+        Fitin
+        Revit
+        Elevit
+        # Qaysi vitamin Ca va F  preparatlarini kariyesga qarshi ta’sirini kuchaytiradi?
+        Vitamin D2
+        Vitamin C 
+        Vitamin A
+        Vitamin A1
+        Vitamin B6
+        # Ca va P preparatlari profilaktika maqsadida qancha qabul qilinadi?
+        1 oy- yiliga 2 marta
+        2hafta- yiliga 4 marta
+        2 oy- yiliga 1 marta
+        1 oy- yiliga 4 marta
+        1 hafta- yiliga 2 marta
+        # Kariyes profilaktikasi maqsadida NaF bilan birga applikatsiyada ishlatilanadi?
+        10% Ca glyukonat eritmasi
+        5% Ca glyukonat eritmasi
+        10% CaCl2 eritmasi
+        5% CaCl2 eritmasi
+        5% Ca laktat eritmasi
+        # Organizmda Ca va P almashinuvini boshqaruvchi vitamin
+        D2
+        C
+        K
+        A1
+        B12
+        # Ftoridlarni organizmdan  chiqishini  asosiy  yoli?
+        Siydik bilan
+        Ter bilan
+        Solak bilan
+        Nafas bilan
+        Yog bezlari bilan
+        # Suvni ftorlash qayerda otkaziladi?
+        Vodoprovod  stansiyasida
+        Suv omborida
+        Katelda
+        Tozalash bolimida
+        Laboratoriyada
+        # Ftoridlar emalga qaysi davrlarda ta’sir korsatadi?
+        Hamma javob togri
+        Tish murtaklanish  davrida
+        Sut prikusi   davrida
+        Tishlar almashinuvi davrida
+        Doimiy prikus   davrida
+        # Ftorlangan suvning  samaradorligi   tishning qaysi sohasida  koproq kuzatiladi?
+        Tishning silliq yuzasida
+        Fissura soxasida
+        Tish yoriqlarida
+        Kontakt yuzasida
+        Distal yuzasida 
+        # Tish profilaktikasining arzon usuli?
+        Suvni ftorlash
+        Sutni ftorlash
+        Tishdagi karashlarni olib tashlashTish chotkasi bilan tish tozalashda amalga oshirilmaydigan harakatlar?
+        Ogiz boshligi  sanatsiyasi
+        Tishlarni ftorlak bilan qoplash
+        # Sutdagi ftoridning  optimal konsentratsiyasi?
+        2.5  mg/l
+        1.5  mgl
+        1.5  mg/l
+        3     mg/l
+        5     mg/l
+        # 1 kg ftorlangan tuzda ftorning miqdori qancha ?
+        250  mg
+        300  mg
+        500  mg
+        150  mg
+        100  mg 
+        # Fissuralarni  muhrlash jarayoni nechta bosqichda olib boriladi?
+        5
+        4
+        3
+        6
+        2
+        # Kariyes kovak koproq tishning qaysi yuzasida joylashadi?
+        Chaynov yuzasida
+        Frontal yuzada
+        Kontakt yuzada
+        Til yuzasida
+        Lunj yuzasida
+        # Qaysi moddalar mexanik bar’er hosil qiladi?
+        Germetiklar
+        Ftorlak
+        Beladont
+        Suvli dentin
+        Yogli dentin
+        # Shishaionomer germetiklarga kiradi:
+        Akvion 
+        Evikrol
+        Fissurit
+        Fissulayt
+        Lyumikon
+        # Qanday shakldagi fissuralar muhrlashga muhtoj?
+        Kolbasimon
+        Voronkasimon
+        Konussimon
+        Polipsimon
+        Kuraksimon
+        # Maxsus yemiruvchi modda emalda qancha vaqt ushlanadi?
+        30-40sek
+        60sek
+        10sek
+        1 min
+        3 min
+        # Qaysi uslubda emalning mikroyemirilishi olib boriladi?
+        Invaziv
+        Noinvaziv
+        Kimyoviy
+        Ochiq
+        Yopiq
+        # Muhrlanish otkazilgandan keyin  kariyes  jadalligi necha marta kamayadi?
+        6 marta
+        10 marta
+        7 marta
+        3 marta
+        4 marta
+        # Solak tarkibiga ta’sir qiluvchi omillar?
+        Organizmni umumiy holati
+        Tish pastasi
+        Tish chotkasi 
+        Floss
+        Tish poroshoki
+        # Tish yumshoq  karashi tarkibi?
+        Leykotsitlar
+        Fermentlar
+        Metallar
+        Kislotalar
+        Ionlar
+        # Tish karashi hosil bolishida qanday omillar sabab boladi?
+        Tish  holati 
+        Diastema
+        Gipersalivatsiya 
+        Toza ovqat iste’mol qilish
+        Ogiz boshligi sanatsiyasi
+        # Tish karashini hosil qiluvchi omillar?
+        Moddalar almashinuvi buzilishi
+        Qattiq taom istemol qilish
+        Sut mahsulotlarini iste’mol qilish
+        Ortognatik prikus
+        Ogiz boshligi gigiyenasiga rioya qilish
+        # Emal demineralizatsiyasini davolashda asosiy usul:
+        Remterapiya
+        SITS bilan plombalash
+        Muhrlash
+        Davolovchi  prokladka qoyish
+        UVCh
+        # Professional gigiyenaga kiradi?
+        Tish tozalashni orgatish
+        Parodontozni aniqlash
+        Kariyesni davolash
+        Tishlarni charxlash
+        KPO+kp larni aniqlash
+        # Tishlarni malakali tozalash oraligi qaysi omillarga bogliq?
+        Ota- onalar hoxishiga 
+        Prikus holatiga
+        Parodont toqimasi holatiga
+        Solak ajralish tezligiga
+        Solakdagi pH ga
+        # Qoshimcha gigienik vositalar?
+        Tish tozalagichlar
+        Tish pastalari
+        Tish chotkalari
+        Finirlar
+        Polirlar
+        # Tish chotkalarini qattiqlik darajalari?
+        Qattiq
+        Qattiqroq
+        Juda qattiqroq
+        Qattiq-yumshoq
+        Qattiqligi kam
+        # Tish pastasini asosiy tarkiblari?
+        Abraziv tuldiruvchi
+        F preparatlari
+        Ca preparatlari
+        Fosfatlar
+        Gidratlar
+        # Tish pastasidagi kariyesga qarshi qoshimchalar?
+        Natriy  ftorid
+        Mis ftoridi
+        Yod ftoridi
+        Ca glyukonat
+        Alyuminiy gidrooksidi
+        # Karies paydo bolishini ragbatlantiruvchi ovqatlanishni oziga    xosligi:
+        Uglevodlarni yuqori miqdorini saqlovchi ovqatlar 
+        Ozuqada sut mahsulotlarini kop bolishi
+        Ovqatlanish vaqtini kamaytirish
+        Mevalar va sabzavotlarni iste’molini kopaytirish
+        Kattiq ovqatlar qabulini kopaytirish
+        # Bolalarda karies bilan kasallanishni kamaytirishga olib keluvchi mikroelementlar:
+        F 
+        Ag
+        Fe
+        Al
+        Ni
+        # Ftor elementining ahamiyati?
+        Tishning kariyesga nisbatan rezistentligini oshiradi
+        Tish karashini eritadi
+        Deminerilizatsiyani kuchaytiradi
+        Mikroblarni tiklaydi
+        Emal qarshiligini pasaytiradi
+        # Ftor  preparatlarini belgilang?
+        Ftorlak 
+        Naftizin
+        Glitserofosfat Ca
+        Laktat Ca
+        Glyukonat Ca
+        # Kariyesga qarshi ftor saqlamaydigan mineral preparatlarni tanlang?
+        Ca glyukonat
+        Ca sulfat
+        Mg sulfat
+        PP vitamini
+        K vitamini
+        # Ca boy mahsulotlar?
+        Sut
+        Manka botqasi
+        Kol baligi
+        Karam
+        Pomidor
+        # Organizmga ftoridlarning endogen kirib kelishadi:
+        Suv bilan
+        Tomchi bilan
+        Shakar bilan
+        Non  bilan
+        Eritmalar bilan
+        # Ogiz boshligining  tish emalini   demineralizatsiyasiga ta’sir etuvchi omillar?
+        Streptokokklar
+        Stafilakokk
+        Ortodontik apparatlar
+        Abraziv pastalarning tez - tez qollanishi
+        Ftorning suvdagi miqdori kopligi
+        # Nur yordamida qotuvchi germetiklar?
+        Fissurlayt-LS
+        Akvion
+        Argasem
+        Semion-F
+        Silar
+        # Fissuralarning germetizatsiyasiga qarshi korsatmalar?
+        Keng fissuralar
+        Tomchisimon fissuralar
+        Emalning yuqori mineralizatsiyasi
+        Notoliq okklyuziya
+        Tish toliq chiqqanda
+        # Qoshimcha tekshirish usullari:
+        Mikrobiologik tekshiruvlar
+        Korik
+        Sorov
+        Zondlash
+        Perkussiya
+        #Asosiy tekshirish usullari:
+        Korik
+        Sitologik tekshiruvlar
+        Termodiagnostika
+        Rentgen
+        EOD
+        # Ogiz boshligI normal mikroflorasi?
+        Streptokokklar
+        Sil tayoqchasi
+        Veillonella
+        Peptostreptokokk
+        Bakteroidlar
+        # Solak oqsillari.
+        Sistosin
+        Insulin
+        Glyukoza
+        Fruktoza
+        Glikazaminglikan
+        # Emalga xos xususiyatlarni belgilang.
+        Eng qattiq toqima
+        Yumshoq toqima
+        Tish ildizini qoplaydi
+        Govak 
+        Pigmentlangan
+        # Profilaktik  korikning sub’ektiv usullari?
+        Shikoyatlar 
+        EOD
+        Rengenografiya
+        Tomografiya
+        perkussiya  
+        # Parodontning funksiyalarini ayting?
+        Tayanch
+        Hazm qilish
+        Biologik
+        Ximik 
+        Fizik 
+        # Remineralizatsiya xususiyatiga ega:
+        Na ftorid 
+        Ca xlor 
+        Romashka
+        Shalfey
+        Kumush sulfat 
+        # Emal yuza qavatining chuqur qavatidan asosiy farqi:
+        Kariyesga rezistent
+        Doimiy demineralizatsiya bolishi
+        Teshiklar bolishi
+        Kariyesga chidamlilikning pastligi
+        Ftoridlar konsentratsiyasining kamligi
+        # Floslarni turlari?
+        Mumlangan
+        Rombsimon
+        Uchburchak
+        Abrazivli
+        Tishli
+        # Tabiiy tolali tish chotkalarining kamchiliklari?
+        Markaziy kanalning borligi
+        Markaziy kanalning yoqligi
+        Toza saqlash osonligi
+        Qattiqlik hosil qilishning osonligi
+        Tish chotkasini yaxshi tozalay olishlik
+        # Tish chotkasi bilan tish tozalash paytida qanday harakatlar amalga oshiriladi?
+        Supuruvchi
+        Sirpanuvchi
+        Sakrovchi
+        Tolqinsimon
+        Kiruvchi
+        # Tish pastalariga bolgan talablar.
+        Tish karashini yaxshi olishi
+        рH 7,9 bolishi
+        Emal demineralizatsiyasini kuchaytirishi
+        Emal rezistentligini kuchaytirishi
+        Solak ajralishini kuchaytirishi
+        # Shakarga kiradi:
+        Saxaroza 
+        Amilaza
+        Ksilit
+        Lipaza
+        Na’matak
+        # Kariyesogen potensialni kamaytirish uchun  kerak:
+        Shakarni umumiy iste’molini kamaytirish 
+        Uglevodlar qabul qilishni kopaytirish
+        Yumshoq ovqatlar qabulini kopaytirish
+        Shakar ornini bosuvchilarni shakarga almashtirish
+        Sut mahsulotlarini iste’molini kamaytirish
+        # Ftorni saqlovchi gellar?
+        Flyudent 
+        Ishqoriy
+        Flyukostat
+        Ftorodent
+        Vitaftor
+        # Ca preparatlari ta’siri:
+        Markaziy asab sistemasini boshqaradi
+        P almashinuvini boshqaradi
+        Uglevod almashinuvini yaxshilaydi
+        Korishni yaxshilaydi
+        Ftor toplanishiga qarshi
+        # Vitamin B1 ga boy mahsulot:
+        Don mahsulotlari
+        Dengiz bali g i
+        Kol baligi 
+        Gosht
+        Sut
+        # Kariyesni  endogen profilaktikasi uchun foydalaniladi.
+        Ca glyukanat
+        Ca Cl2
+        Revit
+        Tish pastasi
+        Ftorlak
+        # Ftoridlarni  ekzogen qollanililadigan shakllari
+        Laklar
+        Tabletkalar
+        Tomchi
+        Draje
+        Sut bilan
+        # Muhrlanishdan song, qayta nazorat qaysi muddatlarda  amalga oshiriladi?
+        Hafta 
+        3 yil
+        3 kun
+        2 oy
+        5 yil
+        # Muhrlash sifatida ishlatiladigan kompozitlar?
+        -        Prisma fil 
+        issulaxt
+        Composit
+        +       Fissurit-F
+        Akvion
+        #Kariesni davolashning muhim qismi bolib hisoblanadi:
+        Ogiz boshligini toza saqlash
+        Qimirlaydigan tishlarni shinalash
+        Tishlardepulpatsiyasi
+        Tishlarni tanlab charxlash
+        Ochiq kyuretaj otkazish
+        #Kariesni umumiy davolash uchun qollaniladigan mineral komponentlar:
+        Kalsiy glyukonat 
+        Ftor lak
+        Amalgama
+        Kumushnitrati
+        Silantlar
+        # Karies rivojlanish havfini kamaytiradi:
+        Samarali tish tozalash
+        Ichimlik suvida ftor miqdorining pastligi
+        Ftor saqlovchi tish pastalarini qollamaslik
+        Shakarni tez tez iste’mol qilish
+        Umumiy kasalliklarning mavjudligi
+        #Zondlash quyidagilarni aniqlash imkonini beradi:
+        karioz kovak chuqurligi
+        tishshakli
+        tishrangini
+        tishqimirlashi
+        tishpulpasielektroqozgaluvchanligini
+        #Rentgenologik tekshirish usuli yordamida aniqlanadi:
+        yashirin karioz kovak
+        ogriqningmavjudligi
+        tishpulpasielektroqozgaluvchanligini
+        tishrangini
+        tishpulpasiyalliglanishi
+        #Boshlangich kariesda kuzatiladi:
+        borsimon dog mavjudligi
+        karioz kovak mavjudligi
+        dog olchami - bir-necha santimetr
+        doglar soni – tortta va undan koproq
+        tungi ogriqlarning mavjudligi
+        # Profilaktik  korikning sub’ektiv usullariga kirmaydi?
+        Shikoyatlar 
+        Soroqlash 
+        Anamnez  vita
+        Anamnez  morbi
+        EOD
+        # Ftor tutmaydigan preparatlarga kiradi?
+        Fitin 
+        Vitaftor
+        NaF tabletkasi 
+        Tish pastasi
+        Ftorlak
+        # Kariyes profilaktikasida   applikatsiya maqsadida ishlatilmaydi?
+        1-2% NaF eritmasi
+        10% Ca glyukonat eritmasi
+        Ftorlak
+        75% ftorli pasta
+        Vitaftor
+        # Emal yuza qavatining chuqur qavati bilan mosligi:
+        Kariyesga rezistent
+        Yuqori mineralizatsiya
+        Mikroqattiqlik
+        Doimiy remineralizatsiya bolishi
+        Doimiy demineralizatsiya bolishi
+        # Professional gigiyena prinsiplariga kirmaydi?
+        Tishlarni boyoqlar bilan boyash
+        Tish tozalashni orgatish
+        Tish karashlarini polirovkalovchi pasta yordamida olish
+        Jarayon ustidan nazorat
+        PMA ni aniqlash
+        # Flosslarni turlariga kirmaydi?
+        Mumlangan
+        Mumlanmagan
+        Aylana
+        Yassi
+        Rombsimon
+        # Tabiiy tolali tish chotkalariga xos emas?
+        Markaziy kanalning borligi
+        Toza saqlashni qiyinligi
+        Qattiqlik hosil qilish qiyinlingi
+        Tish chotkasini yaxshi tozalay olmaslik
+        Markaziy kanalning yoqligi
+        # Tish chotkasi bilan tish tozalashda amalga oshirilmaydigan harakatlar?
+        +       Supuruvchi
+        Aylanma
+        Vibratsiyalovchi
+        Old-orqa
+        -       Sirpanuvchi
+        #Витафтор tarkibiga kirmaydi?
+        NaF
+        Vitamin A
+        Vitamin D2
+        Vitamin C
+        Temir ftorid
+        # Profilaktik korikning bosqichini ayting?
+        Tashqi korik
+        Ortopantomografiya
+        EOD
+        Tomografiya
+        R-rafiya
+        # qoshimcha usullarini tanlang?
+        EOD
+        Anamnez yigish
+        Tashqi kuzatuv
+        Palpatsiya
+        perkussiya
+        # Tishning kariyes jadallik darajasini korsating?
+        Juda past
+        Orta past
+        Orta yuqori
+        Juda orta
+        Me’yorda
+        # Ogiz suyuqligini funksiyasini korsating?
+        bakterosid
+        Demineralizatsiyalovchi
+        Remineralizatsiyalovchi
+        Stimullovchi
+        gemeopatik
+        # Solak tarkibiga ta’sir qiluvchi omillar?
+        Ogiz boshligini gigiyenik holati
+        Tish pastasi
+        Tish chotkasi 
+        Floss
+        Tish poroshoki
+        # Tish karashi hosil bolishida qanday omillar sabab boladi?
+        Tishlarning zich joylashuvi 
+        Gipersalivatsiya 
+        Toza ovqat iste’mol qilish
+        Ogiz boshligi sanatsiyasi
+        рН=7,0
+        # Tish karashini hosil qiluvchi omillar?
+        Modda almashinuyining buzilishi
+        Sut mahsulotlarini iste’mol qilish
+        Ortognatik prikus
+        Ogiz boshligi gigiyenasiga rioya qilish
+        Me’yordagi modda almashinuvi 
+        #Ochoqli demineralizatsiyani aniqlash uchun qollaniladi:
+        Metilen koki
+        3% li N2O2
+        1% li xloramin
+        2% li xloramin
+        5% liCaCl2
+        # Emal demineralizatsiyasini davolashda asosiy usul:
+        Remterapiya
+        Muhrlash
+        Davolovchi  prokladka qoyish
+        UVCh
+        Metrogil denta bilan appplikasiya
+        # Professional gigiyenaga kiradi?
+        Tish tozalashni orgatish
+        Kariyesni davolash
+        Tishlarni charxlash
+        KPO+kp larni aniqlash
+        PMAni aniqlash
+        # Tishlarni malakali tozalash oraligi qaysi omillarga bogliq?
+        Ota-onalar qiziqishiga
+        Prikus holatiga
+        Parodont toqimasi holatiga
+        Solakdagi pH ga
+        PMA indeksini baholanishiga
+        # Qoshimcha gigienik vositalar?
+        Tish kovlagichlar
+        Tish pastalari
+        Tish chotkalari
+        Finirlar
+        Polirlar
+        # Tish chotkalarini qattiqlik darajalari?
+        Qattiq
+        Juda qattiqroq
+        Qattiq-yumshoq
+        Yumshoqligi kam
+        Qattiqligi kam
+        # Profilaktik korikning sub’ektiv usullari?
+        Shikoyatlar 
+        EOD
+        Rengenografiya
+        Tomografiya
+        KT 
+        # Parodontning funksiyalarini ayting?
+        Tayanch
+        Hazm qilish
+        Biologik
+        Ximik 
+        Fizik
+        # Remineralizatsiya xususiyatiga ega:
+        Na ftorid 
+        Ca xlor 
+        Romashka
+        Shalfey
+        Kumush sulfat 
+        # Emal yuza qavatining chuqur qavatidan asosiy farqi:
+        Kariyesga rezistent
+        Doimiy demineralizatsiya bolishi
+        Teshiklar bolishi
+        Kariyesga chidamlilikning pastligi
+        Ftoridlar konsentratsiyasining kamligi
+        # Professional gigiyena prinsiplari ?
+        Tishlarni boyoklar bilan boyash
+        RMA ni aniqlash
+        Ftorlak surtish
+        Ca preparatlarini buyurish
+        Eleksirlardan foydalanish
+        # Floslarni turlari?
+        Mumlangan
+        Rombsimon
+        Uchburchak
+        Abrazivli
+        Tishli
+        # Tabiiy tolali tish chotkalarining kamchiliklari?
+        Markaziy kanalning borligi
+        Markaziy kanalning yoqligi
+        Toza saqlash osonligi
+        Qattiqlik hosil qilishning osonligi
+        Tish chotkasini yaxshi tozalay olishlik
+        # Qaysi usullar tish tozalaganda tish chotkasi 450 ostida ushlanadi
+        Paxomov usuli
+        Fones usuli
+        Leonard usuli
+        Vinogradova usuli
+        Reyte usuli
+        # Tish chotkasi bilan tish tozalash paytida qanday harakatlar amalga oshiriladi?
+        Supuruvchi
+        Sirpanuvchi
+        Sakrovchi
+        Tolqinsimon
+        Kiruvchi
+        # Tish pastalariga bolgan talablar.
+        Tish karashini yaxshi olishi
+        рH 7,9 bolishi
+        Emal demineralizatsiyasini kuchaytirishi
+        Emal rezistentligini kuchaytirishi
+        Solak ajralishini kuchaytirishi
+        # Shakarga kiradi:
+        Saxaroza 
+        Amilaza
+        Ksilit
+        Lipaza
+        X) Na’matak
+        # Kariyesogen potensialni kamaytirish uchun kerak:
+        Shakarni umumiy iste’molini kamaytirish 
+        Uglevodlar qabul qilishni kopaytirish
+        Yumshoq ovqatlar qabulini kopaytirish
+        Shakar ornini bosuvchilarni shakarga almashtirish
+        X) Sut mahsulotlarini iste’molini kamaytirish
+        # Vitaftor tarkibida nimalarni saqlaydi?
+        NaF
+        Temir ftorid
+        Vitamin E
+        Vitamin B
+        Kaltsiy glyukonat
+        # Ftorni saqlovchi gellar?
+        Flyudent 
+        Ishqoriy
+        Flyukostat
+        Ftorodent
+        Vitaftor
+        # Ca preparatlari ta’siri:
+        Markaziy asab sistemasini boshqaradi
+        P almashinuvini boshqaradi
+        Uglevod almashinuvini yaxshilaydi
+        Korishni yaxshilaydi
+        Ftor toplanishiga qarshi
+        # Vitamin B1 ga boy mahsulot:
+        Don mahsulotlari
+        Dengiz baligi
+        Kol baligi 
+        Gosht
+        Sut
+        # Kariyesni endogen profilaktikasi uchun foydalaniladi.
+        Ca glyukanat
+        Ca Cl2
+        Revit
+        Tish pastasi
+        Ftorlak
+        # Ftoridlarni ekzogen qollanililadigan shakllari
+        Laklar
+        Tabletkalar
+        Tomchi
+        Draje
+        Sut bilan
+        # Muhrlanishdan song, qayta nazorat qaysi muddatlarda amalga oshiriladi?
+        Hafta 
+        3 yil
+        3 kun
+        2 oy
+        5 yil
+        # Muhrlash sifatida ishlatiladigan kompozitlar?
+        Prisma fil 
+        issulaxt
+        Composit
+        Fissurit-F
+        Akvion
+        #Kariesni davolashning muhim qismi bolib hisoblanadi:
+        Ogiz boshligini toza saqlash
+        Qimirlaydigan tishlarni shinalash
+        Tishlardepulpatsiyasi
+        Tishlarni tanlab charxlash
+        Ochiq kyuretaj otkazish
+        #Kariesni umumiy davolash uchun qollaniladigan mineral komponentlar:
+        Kalsiy glyukonat 
+        Ftor lak
+        Amalgama
+        Kumushnitrati
+        Silantlar
+        # Karies rivojlanish havfini kamaytiradi:
+        Samarali tish tozalash
+        Ichimlik suvida ftor miqdorining pastligi
+        Ftor saqlovchi tish pastalarini qollamaslik
+        Shakarni tez tez iste’mol qilish
+        Umumiy kasalliklarning mavjudligi
+        #Zondlash quyidagilarni aniqlash imkonini beradi:
+        karioz kovak chuqurligi
+        tishshakli
+        tishrangini
+        tishqimirlashi
+        tishpulpasielektroqozgaluvchanligini
+        #Rentgenologik tekshirish usuli yordamida aniqlanadi:
+        yashirin karioz kovak
+        ogriqningmavjudligi
+        tishpulpasielektroqozgaluvchanligini
+        tishrangini
+        tishpulpasiyalliglanishi
+        #Boshlangich kariesda kuzatiladi:
+        borsimon dog mavjudligi
+        karioz kovak mavjudligi
+        dog olchami - bir-necha santimetr
+        doglar soni – tortta va undan koproq
+        tungi ogriqlarning mavjudligi
+        # Profilaktik korikning sub’ektiv usullariga kirmaydi?
+        EOD
+        Shikoyatlar 
+        Soroqlash 
+        Anamnez  vita
+        Anamnez  morbi
+        # Parodont funksiyasiga kirmaydi?
+        Hazm qilish
+        Tayanch
+        Ushlab turuvchi
+        Amortizatsiyalovchi
+        Himoyalovchi
+        # Mezodermadan qaysi toqimalar hosil bolmaydi?
+        Emal
+        Pulpa 
+        Dentin
+        Sement
+        Suyak usti pardasi 
+        # Ftor tutmaydigan preparatlarga kiradi?
+        Fitin 
+        Vitaftor
+        NaF tabletkasi 
+        Tish pastasi
+        Ftorlak
+        # Emal yuza qavatining chuqur qavati bilan mosligi:
+        Doimiy demineralizatsiya bolishi
+        Kariyesga rezistent
+        Yuqori mineralizatsiya
+        Mikroqattiqlik
+        Doimiy remineralizatsiya bolishi
+        # Flosslarni turlariga kirmaydi?
+        Rombsimon
+        Mumlangan
+        Mumlanmagan
+        Aylana
+        Yassi
+        # Profilaktik korikning bosqichlarini ayting?
+        Tashqi korik
+        Morfologik kuzatishlar
+        Ortopantomografiya
+        EOD
+        Tomografiya
+        # Kuzatuvning qoshimcha usullarini tanlang?
+        Rentgenografiya
+        Shikoyatlarni tushunish
+        Anamnez yigish
+        Tashqi kuzatuv
+        Palpatsiya
+        # Tishning kariyes jadallik darajasini korsating?
+        Juda past  
+        Chuqur
+        Ortacha, past
+        Ortacha, yuqori
+        Ortacha, chuqur
+        # Ogiz suyuqligini funksiyasini korsating?
+        Bakteriotsid
+        Gumoral
+        Demineralizatsiyalovchi
+        Remineralizatsiyalovchi
+        Stimullovchi
+        # Solak tarkibiga ta’sir qiluvchi omillar?
+        Organizmni umumiy holati
+        Tish pastasi
+        Tish chotkasi 
+        Floss
+        Tish poroshoki
+        # Tish karashi hosil bolishida qanday omillar sabab boladi?
+        Tish holati 
+        Diastema
+        Gipersalivatsiya 
+        Toza ovqat iste’mol qilish
+        Ogiz boshligi sanatsiyasi
+        # Tish karashini hosil qiluvchi omillar?
+        Moddalar almashinuvi buzilishi
+        Qattiq taom istemol qilish
+        Sut mahsulotlarini iste’mol qilish
+        Ortognatik prikus
+        Ogiz boshligi gigiyenasiga rioya qilish
+        # Emal demineralizatsiyasini davolashda asosiy usul:
+        Remterapiya
+        SITS bilan plombalash
+        Muhrlash
+        Davolovchi prokladka qoyish
+        UVCh
+        # Professional gigiyenaga kiradi?
+        Tish tozalashni orgatish
+        Parodontozni aniqlash
+        Kariyesni davolash
+        Tishlarni charxlash
+        KPO+kp larni aniqlash
+        # Tishlarni malakali tozalash oraligi qaysi omillarga bogliq?
+        Ota- onalar hoxishiga 
+        Prikus holatiga
+        Parodont toqimasi holatiga
+        Solak ajralish tezligiga
+        Solakdagi pH ga
+        # Qoshimcha gigienik vositalar?
+        Tish tozalagichlar
+        Tish pastalari
+        Tish chotkalari
+        Finirlar
+        Polirlar
+        # Tish chotkalarini qattiqlik darajalari?
+        Qattiq
+        Qattiqroq
+        Juda qattiqroq
+        Qattiq-yumshoq
+        Qattiqligi kam
+        # Tish pastasini asosiy tarkiblari?
+        Abraziv tuldiruvchi
+        F preparatlari
+        Ca preparatlari
+        Fosfatlar
+        Gidratlar
+        # Tish pastasidagi kariyesga qarshi qoshimchalar?
+        Natriy ftorid
+        Mis ftoridi
+        Yod ftoridi
+        Sa glyukonat
+        Alyuminiy gidrooksidi
+        # Karies paydo bolishini ragbatlantiruvchi ovqatlanishni oziga xosligi:
+        Uglevodlarni yuqori miqdorini saqlovchi ovqatlar 
+        Ozuqada sut mahsulotlarini kop bolishi
+        Ovqatlanish vaqtini kamaytirish
+        Mevalar va sabzavotlarni iste’molini kopaytirish
+        Kattiq ovqatlar qabulini kopaytirish
+        # Bolalarda karies bilan kasallanishni kamaytirishga olib keluvchi mikroelementlar:
+        F 
+        Ag
+        Fe
+        Al
+        Ni
+        # Ftor elementining ahamiyati?
+        Tishning kariyesga nisbatan rezistentligini oshiradi
+        Tish karashini eritadi
+        Deminerilizatsiyani kuchaytiradi
+        Mikroblarni tiklaydi
+        Emal qarshiligini pasaytiradi
+        # Ftor preparatlarini belgilang?
+        Ftorlak 
+        Naftizin
+        Glitserofosfat Sa
+        Laktat Sa
+        Glyukonat Sa
+        # Kariyesga qarshi ftor saqlamaydigan mineral preparatlarni tanlang?
+        Ca glyukonat
+        Sa sulfat
+        Mg sulfat
+        PP vitamini
+        K vitamini
+        # Ca boy mahsulotlar?
+        Sut
+        Manka botqasi
+        Kol baligi
+        Karam
+        Pomidor
+        # Organizmga ftoridlarning endogen kirib kelishadi:
+        Suv bilan
+        Tomchi bilan
+        Shakar bilan
+        Non bilan
+        Eritmalar bilan
+        # Ogiz boshligining tish emalini demineralizatsiyasiga ta’sir etuvchi omillar?
+        Streptokokklar
+        Stafilakokk
+        Ortodontik apparatlar
+        Abraziv pastalarning tez - tez qollanishi
+        Ftorning suvdagi miqdori kopligi
+        # Nur yordamida qotuvchi germetiklar?
+        Fissurlayt-LS
+        Akvion
+        Argasem
+        Silar
+        Semion-F
+        # Fissuralarning germetizatsiyasiga qarshi korsatmalar?
+        Keng fissuralar
+        Tomchisimon fissuralar
+        Emalning yuqori mineralizatsiyasi
+        Notoliq okklyuziya
+        Tish toliq chiqqanda
+        # Qoshimcha tekshirish usullari:
+        Mikrobiologik tekshiruvlar
+        Korik
+        Sorov
+        Zondlash
+        Perkussiya
+        #Asosiy tekshirish usullari:
+        Korik
+        Sitologik tekshiruvlar
+        Termodiagnostika
+        Rentgen
+        EOD
+        # Ogiz boshligI normal mikroflorasi?
+        Streptokokklar
+        Sil tayoqchasi
+        Veillonella
+        Peptostreptokokk
+        Bakteroidlar
+        # Solak oqsillari.
+        Sistosin
+        Insulin
+        Glyukoza
+        Fruktoza
+        Glikazaminglikan
+        # Emalga xos xususiyatlarni belgilang.
+        Eng qattiq toqima
+        Yumshoq toqima
+        Tish ildizini qoplaydi
+        Govak 
+        Pigmentlangan
+        # Profilaktik korikning bosqichlarini ayting?
+        Tashqi korik
+        Morfologik kuzatishlar
+        Ortopantomografiya
+        EOD
+        Tomografiya
+        # Kuzatuvning qoshimcha usullarini tanlang?
+        Rentgenografiya
+        Shikoyatlarni tushunish
+        Anamnez yigish
+        Tashqi kuzatuv
+        Palpatsiya
+        # Tishning kariyes jadallik darajasini korsating?
+        Juda past   
+        Chuqur
+        Ortacha, past
+        Ortacha, yuqori
+        Ortacha, chuqur
+        # Ogiz suyuqligini funksiyasini korsating?
+        Bakteriotsid
+        Gumoral
+        Demineralizatsiyalovchi
+        Remineralizatsiyalovchi
+        Stimullovchi
+        # Solak tarkibiga ta’sir qiluvchi omillar?
+        Organizmni umumiy holati
+        Tish pastasi
+        Tish chotkasi 
+        Floss
+        Tish poroshoki
+        # Tish karashi hosil bolishida qanday omillar sabab boladi?
+        Tish  holati 
+        Diastema
+        Gipersalivatsiya 
+        Toza ovqat iste’mol qilish
+        Ogiz boshligi sanatsiyasi
+        # Tish karashini hosil qiluvchi omillar?
+        Moddalar almashinuvi buzilishi
+        E.Qattiq taom istemol qilish
+        J.Sut mahsulotlarini iste’mol qilish
+        Z.Ortognatik prikus
+        I.Ogiz boshligi gigiyenasiga rioya qilish
+        # Emal demineralizatsiyasini davolashda asosiy usul:
+        Remterapiya
+        SITS bilan plombalash
+        Muhrlash
+        Davolovchi  prokladka qoyish
+        UVCh
+        # Professional gigiyenaga kiradi?
+        Tish tozalashni orgatish
+        Parodontozni aniqlash
+        Kariyesni davolash
+        Tishlarni charxlash
+        KPO+kp larni aniqlash
+        # Tishlarni malakali tozalash oraligi qaysi omillarga bogliq?
+        Ota- onalar hoxishiga 
+        Prikus holatiga
+        Parodont toqimasi holatiga
+        Solak ajralish tezligiga
+        Solakdagi pH ga
+        # Qoshimcha gigienik vositalar?
+        Tish tozalagichlar
+        Tish pastalari
+        Tish chotkalari
+        Finirlar
+        Polirlar
+        # Tish chotkalarini qattiqlik darajalari?
+        Qattiq
+        Qattiqroq
+        Juda qattiqroq
+        Qattiq-yumshoq
+        Qattiqligi kam
+        # Tish pastasini asosiy tarkiblari?
+        Abraziv tuldiruvchi
+        F preparatlari
+        Ca preparatlari
+        Fosfatlar
+        Gidratlar
+        # Tish pastasidagi kariyesga qarshi qoshimchalar?
+        Natriy  ftorid
+        Mis ftoridi
+        Yod ftoridi
+        Sa glyukonat
+        Alyuminiy gidrooksidi
+        # Karies paydo bolishini ragbatlantiruvchi ovqatlanishni oziga    xosligi:
+        Uglevodlarni yuqori miqdorini saqlovchi ovqatlar 
+        Ozuqada sut mahsulotlarini kop bolishi
+        Ovqatlanish vaqtini kamaytirish
+        Mevalar va sabzavotlarni iste’molini kopaytirish
+        Kattiq ovqatlar qabulini kopaytirish
+        # Bolalarda karies bilan kasallanishni kamaytirishga olib keluvchi mikroelementlar:
+        F 
+        Ag
+        Fe
+        Al
+        Ni
+        # Ftor elementining ahamiyati?
+        Tishning kariyesga nisbatan rezistentligini oshiradi
+        Tish karashini eritadi
+        Deminerilizatsiyani kuchaytiradi
+        Mikroblarni tiklaydi
+        Emal qarshiligini pasaytiradi
+        # Ftor  preparatlarini belgilang?
+        Ftorlak 
+        Naftizin
+        Glitserofosfat Sa
+        Laktat Sa
+        Glyukonat Sa
+        # Kariyesga qarshi ftor saqlamaydigan mineral preparatlarni tanlang?
+        Ca glyukonat
+        Sa sulfat
+        Mg sulfat
+        PP vitamini
+        K vitamini
+        # Ca boy mahsulotlar?
+        Sut
+        Manka botqasi
+        Kol baligi
+        Karam
+        Pomidor
+        # Organizmga ftoridlarning endogen kirib kelishadi:
+        Suv bilan
+        Tomchi bilan
+        Shakar bilan
+        Non  bilan
+        Eritmalar bilan
+        # Ogiz boshligining  tish emalini   demineralizatsiyasiga ta’sir etuvchi omillar?
+        Streptokokklar
+        Stafilakokk
+        Ortodontik apparatlar
+        Abraziv pastalarning tez - tez qollanishi
+        Ftorning suvdagi miqdori kopligi
+        # Nur yordamida qotuvchi germetiklar?
+        Fissurlayt-LS
+        Folakor
+        Akvion
+        Argasem
+        Silar
+        # Fissuralarning germetizatsiyasiga qarshi korsatmalar?
+        Keng fissuralar
+        Tomchisimon fissuralar
+        Emalning yuqori mineralizatsiyasi
+        Notoliq okklyuziya
+        Tish toliq chiqqanda
+        # Emalga xos xususiyatlarni belgilang.
+        Eng qattiq toqima
+        Yumshoq toqima
+        Tish ildizini qoplaydi
+        Govak 
+        Pigmentlangan
+        # Profilaktik korikning bosqichlarini ayting?
+        Ogiz boshligini kuzatish
+        Ortopantomografiya
+        EOD
+        Tomografiya
+        Rentgenografiya
+        # Kuzatuvning qoshimcha usullarini tanlang?
+        Radiologik kuzatuvlar
+        Anamnez yigish
+        Tashqi kuzatuv
+        Palpatsiya
+        Perkussiya
+        # Tishning kariyes jadallik darajasini korsating?
+        Past 
+        Ortacha, past
+        Ortacha, yuqori
+        Ortacha, chuqur
+        Meyorda
+        # Ogiz suyuqligini funksiyasini korsating?
+        Ogiz boshligini tozalash
+        Demineralizatsiyalovchi
+        Remineralizatsiyalovchi
+        Stimullovchi
+        Gemeopatik
+        # Solak tarkibiga ta’sir qiluvchi omillar?
+        Solak ajralish tezligi
+        Tish chotkasi 
+        Floss
+        Tish poroshoki
+        Irqiga bogliq
+        # Tish karashi hosil bolishida qanday omillar sabab boladi?
+        Giposalivatsiya
+        Gipersalivatsiya 
+        Toza ovqat iste’mol qilish
+        Ogiz boshligi sanatsiyasi
+        pH =7,0
+        # Tish karashini hosil qiluvchi omillar?
+        B.Notogri prikus
+        J.Sut mahsulotlarini iste’mol qilish
+        Z.Ortognatik prikus
+        I.Ogiz boshligi gigiyenasiga rioya qilish
+        K.Normal moddalar almashinuvi
+        # Yumshoq tish karashi tarkibida boladi?
+        Ovqat qoldiqlari
+        Aminokislotalar
+        Murakkab yoglar
+        Agranulotsitlar
+        TSementoblastlar
+        # Emal demineralizatsiyasini davolashda asosiy usul:
+        0,2 % NaF bilan applikatsiya
+        Muhrlash
+        Davolovchi  prokladka qoyish
+        UVCh
+        Metrogil – denta bilan applikatsiya
+        # Professional gigiyenaga kiradi?
+        Ftorlarni mahalliy qollash
+        Kariyesni davolash
+        Tishlarni charxlash
+        KPO+kp larni aniqlash
+        PMA ni aniqlash
+        # Tishlarni malakali tozalash oraligi qaysi omillarga bogliq?
+        Bolalar qiziqishiga
+        Parodont toqimasi holatiga
+        Solak ajralish tezligiga
+        Solakdagi pH ga
+        PMA indeks bahosiga
+        # Qoshimcha gigienik vositalar?
+        Tish ipi
+        Tish chotkalari
+        Finirlar
+        Polirlar
+        Ftorlak
+        # Tish chotkalarini qattiqlik darajalari?
+        Juda qattiq
+        Juda qattiqroq
+        Qattiq-yumshoq
+        Qattiqligi kam
+        Yumshoqligi kam 
+        # Tish tozalash usullari?
+        Paxomov usuli
+        Kolesov usuli
+        Borisov usuli
+        Fyodorov usuli
+        Kurlyanskiy usuli
+        # Tish pastasidagi kariyesga qarshi qoshimchalar?
+        -    Qorgoshin ftorid
+        Yod ftoridi
+        + Sa glyukonat
+        Alyuminiy gidrooksidi
+        Bor
+        # Karies paydo bolishini ragbatlantiruvchi ovqatlanishni oziga    xosligi:
+        Ovqatlanish vaqtini kopaytirish 
+        Ovqatlanish vaqtini kamaytirish
+        Mevalar va sabzavotlarni iste’molini kopaytirish
+        Kattiq ovqatlar qabulini kopaytirish
+        Vitaminga boy ovqatlar
+        # Bolalarda karies bilan kasallanishni kamaytirishga olib keluvchi mikroelementlar:
+        Ca 
+        Fe
+        Al
+        Ni
+        Cd
+        # Ftor elementining ahamiyati?
+        Tish qattiq toqimasining kristalizatsiyasini yaxshilaydi
+        Deminerilizatsiyani kuchaytiradi
+        Mikroblarni tiklaydi
+        Emal qarshiligini pasaytiradi
+        Tish toshlarini hosil bolishiga sabab boladi
+        # Ftor  preparatlarini belgilang?
+        NaF eritmasi
+        Glitserofosfat Sa
+        Laktat Sa
+        Glyukonat Sa
+        Pomarin
+        # Kariyesga qarshi ftor saqlamaydigan mineral preparatlarni tanlang?
+        Ca laktat
+        Mg sulfat
+        PP vitamini
+        K vitamini
+        SaCl2
+        # Ca boy mahsulotlar?
+        Tvorog
+        Kol baligi
+        Karam
+        Pomidor
+        Gosht
+        # Organizmga ftoridlarning endogen kirib kelishadi:
+        +Tuz bilan
+        -Shakar bilan
+        -Non  bilan
+        -Eritmalar bilan
+        -Draje  bilan
+        # Ogiz boshligining  tish emalini   demineralizatsiyasiga ta’sir etuvchi omillar?
+        +Yumshoq tish karashlari
+        -Ortodontik apparatlar
+        -Abraziv pastalarning tez - tez qollanishi
+        -Ftorning suvdagi miqdori kopligi
+        -Oqsillarga boy ovqat
+        # Nur yordamida qotuvchi germetiklar?
+        +Fissurlayt
+        -Akvion
+        -Argasem
+        -Silar
+        -Semion-F
+        # Fissuralarning germetizatsiyasiga qarshi korsatmalar?
+        +Karioz kovak borligi
+        -Emalning yuqori mineralizatsiyasi
+        -Notoliq okklyuziya
+        -Tish toliq chiqqanda
+        -Chuqur va tor fissura
+        # Qoshimcha tekshirish usullari:
+        +Termodiagnostika
+        -Sorov
+        -Zondlash
+        -Perkussiya
+        -Palpatsiya
+        # Asosiy tekshirish usullari:
+        +Sorov
+        -Termodiagnostika
+        -Rentgen
+        -EOD
+        -Bioximik tekshiruvlar
+        # Ogiz boshligI normal mikroflorasi?
+        +Stafilakokklar
+        -Veillonella
+        -Peptostreptokokk
+        -Bakteroidlar
+        -Fusohacterium
+        # Emalga xos xususiyatlarni belgilang.
+        +Tish toj qismini qoplab turadi
+        -Tish ildizini qoplaydi
+        -Govak 
+        -Pigmentlangan
+        -Hujayrali
+        #      Tish emalining kariyes rezistentligini oshirish uchun ichish uchun qanday preparatlar qollaniladi?
+        -Laktat yoki kalsiy glyukonat
+                  +  Fitin
+        -Adrenalin
+        -Laktobakterin
+        -Limon kislota
+        #     Kalsiy glyukonat ta’sirida emal otkazuvchanligi qanday ozgaradi?
+        -Oshiradi
+                    +  Pasaytiradi
+        -Ozgartirmaydi
+        -Avval oshadi keyin pasayadi
+        -Avval pasayadi keyin oshadi
+        #    Parodont toqimasi oz ichiga oladi:
+        +    MilK
+        -Qattiq tanglay
+             -Emal
+              -Tish boshligi
+                -Solak bezlari
+        #   Gigiyenik bilim va tarbiyani necha yoshdan boshlash kerak?
+        -doimiy molyarni chiqish vaqtida (5-6 yosh)
+        -barcha doimiy tishlarni chiqish  vaqtida (12-13 yosh)
+        -3-4 yoshligidan
+                   +    2yoshdan
+        vaqtinchalik tish chiqish vaqtida
+        #      Uchunchi darajali faol kariesi bor bolaga qaysi gegeinik vositalarini tavsiya qilasiz?
+        -Tuzli tish pastalari
+                   +   Tarkibida ftor birikmalarini saqlovchi davolovchi profilaktik tish pastalari 
+        -Tarkibida davolovchi ot eleksirlari saqlovchi, davolovchi profilaktik tish pastalari
+        -Gigienik tish pastalari
+        -Axamiyati yoq
+        #	 Ichimlik suvida kop miqdorda ftor saqlovchi muhitda yashovchi, tishlari soglom bolalarga qanday gigigenik vositalarni tavsiya qilasiz?
+        -Ftor saqlovchi, davolovchi profilaktik tish pastasi 
+        -Tish parashogi
+                  +    Gigienik tish pastasi
+        -Tarkibida davolovchi ot eleksirlari saqlovchi, davolovchi profilaktik tish pastalari
+        -Tarkibida davolovchi Kalsiy- fosfor tuzini tutuvchi, davolovchi profilaktik tish pastalari
+        #	 Malakali gigiena otkazilishi shart bolgan kompleks davo choralari qaysi kasallika tegishli?
+        -      Ochoqli demeneralizatsiya 
+        -       Kariesni uchinchi darajali faolligi 
+        -     Generallashgan parodontit
+              -      Yuz jag anomliyasi
+        +      Yuqorida sanalganlarni barchasi
+        #	 Suvda ftorning optimal  miqdori? 
+        -0,3-0,8 mg/l
+        -0,5-0,9 mg/l
+                    + 1,0-1,2 mg/l
+        -2,3-3,0 mg/l
+        -6,0 mg/l dan yuqori
+        #	 Yosh bolalarda paradont kasalligi profilaktikasida otkazilishi shart?
+        -Ogiz boshligI gigienasini 
+        -Profilaktikada prikusning anomaliyasi
+        -Yuz suyak skeliti yumshoq toqimasini birikishi anomaliyalari korreksiyasi va vujudga kelishi
+        -Paradont holati
+                   +  Hamma javoblar togri
+        #	Yumshoq tish karashi xosil boladi: 
+        -      Ogiz boshligI yaxshiligida
+        -      Qattiq taom iste’mol qilganda 
+        +     Yumshoq va yopishqoq ovqat iste’mol qilganda
+        -       Gigienik tish pastalarini qollaganda
+        -       Barcha javoblar togri
+        #	Yumshoq tish karashi tozalanadi:
+                    + Suv oqimi bilan
+        -Flosslar bilan
+        -Zaks ilmoqlari yordamida
+        -Professional gigiyena orqali 
+                    -  Ultratovush yordamida
+        #	Solak tarkibli tosh –bu:
+        -Milk osti toshlar
+                    +   Milk usti toshlar
+        -Milk ichii toshlar
+        -Milk tashqarisi toshlar
+        -Milk toshlari
+        #	 Kariyes keltirib chiqaruvchi umumiy faktorlar:
+        Tish toshi va blyashka
+        Ogiz suyuqligi tarkibi va xususiyatlari ozgarishi
+        +    Naslylik
+        Tish toqimalarining rezistentligi
+        Tish pulpasi holati
+        `;
+
+        // --- DOM Elements ---
+        const startScreen = document.getElementById('start-screen');
+        const quizScreen = document.getElementById('quiz-screen');
+        const resultScreen = document.getElementById('result-screen');
+        const startBtn = document.getElementById('start-btn');
+        const questionText = document.getElementById('question-text');
+        const optionsContainer = document.getElementById('options-container');
+        const nextBtn = document.getElementById('next-btn');
+        const progressIndicator = document.getElementById('progress-indicator');
+        const scoreIndicator = document.getElementById('score-indicator');
+        const feedbackMessage = document.getElementById('feedback-message');
+        const finalScore = document.getElementById('final-score');
+        const finalMessage = document.getElementById('final-message');
+        const restartBtn = document.getElementById('restart-btn');
+        const questionCard = document.getElementById('question-card');
+
+        // --- State Variables ---
+        let allQuestions = []; // Holds all questions parsed from the raw data
+        let questions = []; // Holds the 25 questions for the current quiz round
+        let currentQuestionIndex = 0;
+        let score = 0;
+        let selectedAnswer = null;
+        let answerChecked = false;
+
+        // --- Functions ---
+
+        /**
+         * Parses the raw text data into a structured array of question objects.
+         * It follows the user's rule: '+' denotes the correct answer. If no '+',
+         * the first option is correct.
+         */
+        function parseQuestions() {
+            const questionBlocks = rawQuizData.split('#').filter(q => q.trim() !== '');
+            return questionBlocks.map(qBlock => {
+                const lines = qBlock.trim().split('\n').map(line => line.trim()).filter(line => line);
+                const question = lines[0];
+                const optionsRaw = lines.slice(1);
+                
+                let correctAnswerText = '';
+                // Check if any option is explicitly marked as correct with '+'
+                const hasPlus = optionsRaw.some(opt => opt.trim().startsWith('+'));
+
+                const options = optionsRaw.map((opt, index) => {
+                    const trimmedOpt = opt.trim();
+                    if (hasPlus) {
+                        if (trimmedOpt.startsWith('+')) {
+                            correctAnswerText = trimmedOpt.substring(1).trim();
+                            return correctAnswerText;
+                        }
+                        return trimmedOpt.startsWith('-') ? trimmedOpt.substring(1).trim() : trimmedOpt;
+                    } else {
+                        // If no '+' is present, the first option is considered correct
+                        if (index === 0) {
+                            correctAnswerText = trimmedOpt;
+                        }
+                        return trimmedOpt;
+                    }
+                });
+                
+                return { question, options, correctAnswer: correctAnswerText };
+            }).filter(q => q.question && q.options.length > 1 && q.correctAnswer); // Ensure valid questions
+        }
+        
+        /**
+         * Shuffles an array in place using the Fisher-Yates algorithm.
+         * @param {Array} array The array to shuffle.
+         */
+        function shuffleArray(array) {
+            for (let i = array.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [array[i], array[j]] = [array[j], array[i]];
+            }
+        }
+        
+        /**
+         * Prepares and starts a new quiz round.
+         */
+        function startQuiz() {
+            // Shuffle all available questions
+            shuffleArray(allQuestions);
+            // Select the first 25 questions for this round
+            questions = allQuestions.slice(0, 25);
+            
+            currentQuestionIndex = 0;
+            score = 0;
+            answerChecked = false;
+            
+            startScreen.classList.add('hidden');
+            resultScreen.classList.add('hidden');
+            quizScreen.classList.remove('hidden');
+            
+            nextBtn.textContent = "Keyingi savol";
+            loadQuestion();
+        }
+
+        /**
+         * Loads and displays the current question and its options.
+         */
+        function loadQuestion() {
+            answerChecked = false;
+            selectedAnswer = null;
+            questionCard.classList.remove('fade-in');
+            void questionCard.offsetWidth; // Trigger reflow
+            questionCard.classList.add('fade-in');
+
+            const currentQuestion = questions[currentQuestionIndex];
+            questionText.textContent = currentQuestion.question;
+            optionsContainer.innerHTML = '';
+            
+            // Shuffle options for the current question to make it more engaging
+            const shuffledOptions = [...currentQuestion.options];
+            shuffleArray(shuffledOptions);
+
+            shuffledOptions.forEach(option => {
+                const button = document.createElement('button');
+                button.textContent = option;
+                button.classList.add('option-btn', 'w-full', 'text-left', 'p-4', 'border-2', 'border-gray-300', 'dark:border-gray-600', 'rounded-lg', 'hover:bg-blue-100', 'dark:hover:bg-gray-700', 'focus:outline-none', 'focus:ring-2', 'focus:ring-blue-400');
+                button.onclick = () => handleOptionSelect(button, option);
+                optionsContainer.appendChild(button);
+            });
+
+            progressIndicator.textContent = `Savol ${currentQuestionIndex + 1} / ${questions.length}`;
+            scoreIndicator.textContent = `To'g'ri: ${score}`;
+            nextBtn.disabled = true;
+            feedbackMessage.textContent = '';
+        }
+        
+        /**
+         * Handles the user's selection of an answer option.
+         * @param {HTMLElement} buttonElement The button element that was clicked.
+         * @param {string} answerText The text of the selected answer.
+         */
+        function handleOptionSelect(buttonElement, answerText) {
+            if (answerChecked) return; // Prevent changing answer after check
+
+            const selectedBtn = optionsContainer.querySelector('.selected');
+            if (selectedBtn) {
+                selectedBtn.classList.remove('selected');
+            }
+
+            buttonElement.classList.add('selected');
+            selectedAnswer = answerText;
+            nextBtn.disabled = false;
+            
+            // Automatically check the answer once an option is clicked.
+            checkAnswer();
+        }
+
+        /**
+         * Checks the selected answer, provides feedback, and updates the score.
+         */
+        function checkAnswer() {
+            if (answerChecked) return;
+            answerChecked = true;
+            const currentQuestion = questions[currentQuestionIndex];
+            const correct = selectedAnswer === currentQuestion.correctAnswer;
+            
+            const optionButtons = optionsContainer.querySelectorAll('.option-btn');
+            
+            optionButtons.forEach(btn => {
+                btn.disabled = true; 
+                if (btn.textContent === currentQuestion.correctAnswer) {
+                    btn.classList.add('correct');
+                    btn.classList.remove('selected');
+                }
+            });
+
+            const selectedBtn = Array.from(optionButtons).find(btn => btn.textContent === selectedAnswer);
+
+            if (correct) {
+                score++;
+                if (selectedBtn) selectedBtn.classList.add('correct');
+                feedbackMessage.textContent = "To'g'ri! Barakalla!";
+                feedbackMessage.classList.add('text-green-500');
+                feedbackMessage.classList.remove('text-red-500');
+            } else {
+                if (selectedBtn) {
+                   selectedBtn.classList.add('incorrect');
+                }
+                feedbackMessage.textContent = "Noto'g'ri. Keyingi safar omad!";
+                feedbackMessage.classList.add('text-red-500');
+                feedbackMessage.classList.remove('text-green-500');
+            }
+            
+            scoreIndicator.textContent = `To'g'ri: ${score}`;
+
+            if (currentQuestionIndex === questions.length - 1) {
+                nextBtn.textContent = "Natijalarni ko'rish";
+            }
+            
+            // Automatically move to the next question or results after a short delay
+            setTimeout(() => {
+                currentQuestionIndex++;
+                if (currentQuestionIndex < questions.length) {
+                    loadQuestion();
+                } else {
+                    showResults();
+                }
+            }, 1500);
+        }
+        
+        /**
+         * Displays the final results screen with a personalized message.
+         */
+        function showResults() {
+            quizScreen.classList.add('hidden');
+            resultScreen.classList.remove('hidden');
+            finalScore.textContent = `${score} / ${questions.length}`;
+
+            const percentage = (score / questions.length) * 100;
+            let message = '';
+            if (percentage === 100) {
+                message = "Ajoyib! Barcha savollarga to'g'ri javob berdingiz!";
+            } else if (percentage >= 75) {
+                message = "Yaxshi natija! Bilimingiz yuqori darajada.";
+            } else if (percentage >= 50) {
+                message = "Qoniqarli! Yana bir oz harakat qilsangiz, yanada yaxshi bo'ladi.";
+            } else {
+                message = "Tushkunlikka tushmang! Qayta urinib ko'ring va natijangizni yaxshilang.";
+            }
+            finalMessage.textContent = message;
+        }
+        
+        /**
+         * Resets the quiz state to show the start screen.
+         */
+        function restartQuiz() {
+            resultScreen.classList.add('hidden');
+            startScreen.classList.remove('hidden');
+        }
+
+        // --- Event Listeners ---
+        startBtn.addEventListener('click', startQuiz);
+        
+        // This button's main role is now visual, as the logic proceeds automatically
+        nextBtn.addEventListener('click', () => {
+             // The logic now moves automatically, but a click can skip the timeout
+             // This part can be left empty or removed if the button is hidden
+        });
+        
+        restartBtn.addEventListener('click', restartQuiz);
+
+        // --- Initialization ---
+        function init() {
+            allQuestions = parseQuestions();
+        }
+
+        init();
+    </script>
+</body>
+</html>

@@ -46,16 +46,33 @@
             from { opacity: 0; transform: translateY(20px); }
             to { opacity: 1; transform: translateY(0); }
         }
+        .leaderboard-entry:nth-child(odd) {
+            background-color: #f9fafb; /* bg-gray-50 */
+        }
+        .dark .leaderboard-entry:nth-child(odd) {
+            background-color: #1f2937; /* dark:bg-gray-800 */
+        }
     </style>
 </head>
 <body class="bg-gray-100 dark:bg-gray-900 text-gray-800 dark:text-gray-200 flex items-center justify-center min-h-screen p-4">
 
-    <div id="quiz-container" class="quiz-container w-full bg-white dark:bg-gray-800 rounded-2xl shadow-2xl p-6 md:p-8 no-select">
+    <div id="quiz-container" class="quiz-container w-full bg-white dark:bg-gray-700 rounded-2xl shadow-2xl p-6 md:p-8 no-select">
         
+        <!-- Name Entry Screen -->
+        <div id="name-entry-screen" class="text-center">
+            <h1 class="text-3xl md:text-4xl font-bold text-blue-600 dark:text-blue-400 mb-4">Testga Xush Kelibsiz!</h1>
+            <p class="text-lg text-gray-600 dark:text-gray-300 mb-6">Testni boshlashdan oldin ismingizni kiriting.</p>
+            <input type="text" id="name-input" placeholder="Ismingizni yozing..." class="w-full p-3 border-2 border-gray-300 dark:border-gray-500 rounded-lg mb-4 bg-white dark:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-blue-500">
+            <button id="continue-btn" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-8 rounded-lg shadow-lg transition-transform duration-300">
+                Davom etish
+            </button>
+            <p id="user-id-display" class="text-xs text-gray-400 mt-4"></p>
+        </div>
+
         <!-- Start Screen -->
-        <div id="start-screen" class="text-center">
-            <h1 class="text-3xl md:text-4xl font-bold text-blue-600 dark:text-blue-400 mb-4">Stomatologiya Testiga Xush Kelibsiz!</h1>
-            <p class="text-lg text-gray-600 dark:text-gray-400 mb-8">Jami savollardan 25 tasi tasodifiy tartibda beriladi. Bilimingizni sinab ko'rishga tayyormisiz?</p>
+        <div id="start-screen" class="text-center hidden">
+            <h1 id="welcome-message" class="text-3xl md:text-4xl font-bold text-blue-600 dark:text-blue-400 mb-4"></h1>
+            <p class="text-lg text-gray-600 dark:text-gray-300 mb-8">Jami savollardan 25 tasi tasodifiy tartibda beriladi. Bilimingizni sinab ko'rishga tayyormisiz?</p>
             <button id="start-btn" class="w-full md:w-auto bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-8 rounded-lg shadow-lg transform hover:scale-105 transition-transform duration-300">
                 Testni Boshlash
             </button>
@@ -70,33 +87,41 @@
             
             <div id="question-card" class="mb-6 fade-in">
                 <h2 id="question-text" class="text-xl md:text-2xl font-semibold mb-6 min-h-[80px]"></h2>
-                <div id="options-container" class="space-y-3">
-                    <!-- Options will be dynamically inserted here -->
-                </div>
+                <div id="options-container" class="space-y-3"></div>
             </div>
 
             <div id="feedback-message" class="text-center font-medium my-4 h-6"></div>
-
-            <button id="next-btn" class="w-full bg-gray-800 dark:bg-gray-200 hover:bg-black dark:hover:bg-white text-white dark:text-black font-bold py-3 px-6 rounded-lg shadow-md transition-colors duration-300 disabled:bg-gray-400 disabled:cursor-not-allowed" disabled>
-                Keyingi savol
-            </button>
         </div>
         
         <!-- Result Screen -->
-        <div id="result-screen" class="text-center hidden">
-            <h2 class="text-3xl font-bold mb-4 text-blue-600 dark:text-blue-400">Test Yakunlandi!</h2>
-            <p class="text-2xl mb-2">Sizning natijangiz:</p>
-            <p id="final-score" class="text-5xl font-extrabold text-green-500 mb-6">0 / 25</p>
-            <p id="final-message" class="text-lg text-gray-600 dark:text-gray-400 mb-8"></p>
-            <button id="restart-btn" class="w-full md:w-auto bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-8 rounded-lg shadow-lg transform hover:scale-105 transition-transform duration-300">
-                Qayta Boshlash
-            </button>
+        <div id="result-screen" class="hidden">
+            <div class="text-center">
+                <h2 id="result-header" class="text-3xl font-bold mb-4 text-blue-600 dark:text-blue-400">Test Yakunlandi!</h2>
+                <p class="text-2xl mb-2">Sizning natijangiz:</p>
+                <p id="final-score" class="text-5xl font-extrabold text-green-500 mb-6">0 / 25</p>
+                <p id="final-message" class="text-lg text-gray-600 dark:text-gray-300 mb-8"></p>
+                <button id="restart-btn" class="w-full md:w-auto bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-8 rounded-lg shadow-lg transform hover:scale-105 transition-transform duration-300 mb-8">
+                    Qayta Boshlash
+                </button>
+            </div>
+            <!-- Leaderboard Section -->
+            <div id="leaderboard" class="mt-8 border-t-2 border-gray-200 dark:border-gray-600 pt-6">
+                <h3 class="text-2xl font-bold text-center mb-4">Peshqadamlar Jadvali</h3>
+                <div id="leaderboard-list" class="bg-white dark:bg-gray-800 rounded-lg shadow-inner overflow-hidden">
+                    <!-- Leaderboard entries will be dynamically inserted here -->
+                </div>
+                 <div id="leaderboard-loading" class="text-center py-4">Yuklanmoqda...</div>
+            </div>
         </div>
     </div>
 
-    <script>
+    <script type="module">
+        // --- Firebase Imports ---
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+        import { getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getFirestore, collection, addDoc, onSnapshot, query, serverTimestamp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+
         // --- DATA ---
-        // Raw text data from the complete document.
         const rawQuizData = `
         # Sut tishlar sonini aniqlang?
         +20
@@ -1893,73 +1918,119 @@
         Tish toqimalarining rezistentligi
         Tish pulpasi holati
         `;
+        
+        // --- Firebase Config ---
+        // These variables are placeholders and will be automatically replaced in the Canvas environment.
+        const firebaseConfig = typeof __firebase_config !== 'undefined' ? JSON.parse(__firebase_config) : {};
+        const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
+
+        // --- Firebase Services ---
+        let app, db, auth;
+        let leaderboardUnsubscribe = null;
 
         // --- DOM Elements ---
+        const nameEntryScreen = document.getElementById('name-entry-screen');
+        const nameInput = document.getElementById('name-input');
+        const continueBtn = document.getElementById('continue-btn');
+        const userIdDisplay = document.getElementById('user-id-display');
         const startScreen = document.getElementById('start-screen');
+        const welcomeMessage = document.getElementById('welcome-message');
         const quizScreen = document.getElementById('quiz-screen');
         const resultScreen = document.getElementById('result-screen');
         const startBtn = document.getElementById('start-btn');
         const questionText = document.getElementById('question-text');
         const optionsContainer = document.getElementById('options-container');
-        const nextBtn = document.getElementById('next-btn');
         const progressIndicator = document.getElementById('progress-indicator');
         const scoreIndicator = document.getElementById('score-indicator');
         const feedbackMessage = document.getElementById('feedback-message');
+        const resultHeader = document.getElementById('result-header');
         const finalScore = document.getElementById('final-score');
         const finalMessage = document.getElementById('final-message');
         const restartBtn = document.getElementById('restart-btn');
         const questionCard = document.getElementById('question-card');
+        const leaderboardList = document.getElementById('leaderboard-list');
+        const leaderboardLoading = document.getElementById('leaderboard-loading');
+
 
         // --- State Variables ---
-        let allQuestions = []; // Holds all questions parsed from the raw data
-        let questions = []; // Holds the 25 questions for the current quiz round
+        let allQuestions = [];
+        let questions = []; 
         let currentQuestionIndex = 0;
         let score = 0;
         let selectedAnswer = null;
         let answerChecked = false;
+        let userName = '';
+        let userId = '';
 
         // --- Functions ---
+        
+        /**
+         * Initializes Firebase app and authentication.
+         */
+        async function initializeFirebase() {
+            try {
+                app = initializeApp(firebaseConfig);
+                db = getFirestore(app);
+                auth = getAuth(app);
+                
+                onAuthStateChanged(auth, async (user) => {
+                    if (user) {
+                        userId = user.uid;
+                        userIdDisplay.textContent = `Sizning ID: ${userId}`;
+                        console.log("User is signed in with UID:", userId);
+                        // Start listening for leaderboard updates once authenticated
+                        listenForLeaderboardUpdates();
+                    } else {
+                        console.log("User is not signed in. Attempting anonymous sign-in.");
+                        try {
+                           if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
+                                await signInWithCustomToken(auth, __initial_auth_token);
+                           } else {
+                                await signInAnonymously(auth);
+                           }
+                        } catch (error) {
+                             console.error("Error during sign-in:", error);
+                        }
+                    }
+                });
+            } catch (error) {
+                console.error("Firebase initialization failed:", error);
+            }
+        }
 
         /**
          * Parses the raw text data into a structured array of question objects.
-         * It follows the user's rule: '+' denotes the correct answer. If no '+',
-         * the first option is correct.
          */
         function parseQuestions() {
             const questionBlocks = rawQuizData.split('#').filter(q => q.trim() !== '');
             return questionBlocks.map(qBlock => {
                 const lines = qBlock.trim().split('\n').map(line => line.trim()).filter(line => line);
+                if (lines.length < 2) return null; // Skip invalid blocks
                 const question = lines[0];
                 const optionsRaw = lines.slice(1);
                 
                 let correctAnswerText = '';
-                // Check if any option is explicitly marked as correct with '+'
                 const hasPlus = optionsRaw.some(opt => opt.trim().startsWith('+'));
 
                 const options = optionsRaw.map((opt, index) => {
                     const trimmedOpt = opt.trim();
+                    const cleanOpt = trimmedOpt.replace(/^[+-]\s*/, '');
                     if (hasPlus) {
                         if (trimmedOpt.startsWith('+')) {
-                            correctAnswerText = trimmedOpt.substring(1).trim();
-                            return correctAnswerText;
+                            correctAnswerText = cleanOpt;
                         }
-                        return trimmedOpt.startsWith('-') ? trimmedOpt.substring(1).trim() : trimmedOpt;
-                    } else {
-                        // If no '+' is present, the first option is considered correct
-                        if (index === 0) {
-                            correctAnswerText = trimmedOpt;
-                        }
-                        return trimmedOpt;
+                    } else if (index === 0) {
+                        correctAnswerText = cleanOpt;
                     }
+                    return cleanOpt;
                 });
                 
                 return { question, options, correctAnswer: correctAnswerText };
-            }).filter(q => q.question && q.options.length > 1 && q.correctAnswer); // Ensure valid questions
+            }).filter(q => q && q.question && q.options.length > 1 && q.correctAnswer);
         }
         
         /**
-         * Shuffles an array in place using the Fisher-Yates algorithm.
-         * @param {Array} array The array to shuffle.
+         * Shuffles an array in place.
          */
         function shuffleArray(array) {
             for (let i = array.length - 1; i > 0; i--) {
@@ -1972,9 +2043,7 @@
          * Prepares and starts a new quiz round.
          */
         function startQuiz() {
-            // Shuffle all available questions
             shuffleArray(allQuestions);
-            // Select the first 25 questions for this round
             questions = allQuestions.slice(0, 25);
             
             currentQuestionIndex = 0;
@@ -1985,65 +2054,50 @@
             resultScreen.classList.add('hidden');
             quizScreen.classList.remove('hidden');
             
-            nextBtn.textContent = "Keyingi savol";
             loadQuestion();
         }
 
         /**
-         * Loads and displays the current question and its options.
+         * Loads and displays the current question.
          */
         function loadQuestion() {
             answerChecked = false;
             selectedAnswer = null;
             questionCard.classList.remove('fade-in');
-            void questionCard.offsetWidth; // Trigger reflow
+            void questionCard.offsetWidth;
             questionCard.classList.add('fade-in');
 
             const currentQuestion = questions[currentQuestionIndex];
             questionText.textContent = currentQuestion.question;
             optionsContainer.innerHTML = '';
             
-            // Shuffle options for the current question to make it more engaging
             const shuffledOptions = [...currentQuestion.options];
             shuffleArray(shuffledOptions);
 
             shuffledOptions.forEach(option => {
                 const button = document.createElement('button');
                 button.textContent = option;
-                button.classList.add('option-btn', 'w-full', 'text-left', 'p-4', 'border-2', 'border-gray-300', 'dark:border-gray-600', 'rounded-lg', 'hover:bg-blue-100', 'dark:hover:bg-gray-700', 'focus:outline-none', 'focus:ring-2', 'focus:ring-blue-400');
+                button.classList.add('option-btn', 'w-full', 'text-left', 'p-4', 'border-2', 'border-gray-300', 'dark:border-gray-500', 'rounded-lg', 'hover:bg-blue-100', 'dark:hover:bg-gray-700', 'focus:outline-none', 'focus:ring-2', 'focus:ring-blue-400');
                 button.onclick = () => handleOptionSelect(button, option);
                 optionsContainer.appendChild(button);
             });
 
             progressIndicator.textContent = `Savol ${currentQuestionIndex + 1} / ${questions.length}`;
             scoreIndicator.textContent = `To'g'ri: ${score}`;
-            nextBtn.disabled = true;
             feedbackMessage.textContent = '';
         }
         
         /**
-         * Handles the user's selection of an answer option.
-         * @param {HTMLElement} buttonElement The button element that was clicked.
-         * @param {string} answerText The text of the selected answer.
+         * Handles the user's selection of an answer.
          */
         function handleOptionSelect(buttonElement, answerText) {
-            if (answerChecked) return; // Prevent changing answer after check
-
-            const selectedBtn = optionsContainer.querySelector('.selected');
-            if (selectedBtn) {
-                selectedBtn.classList.remove('selected');
-            }
-
-            buttonElement.classList.add('selected');
+            if (answerChecked) return;
             selectedAnswer = answerText;
-            nextBtn.disabled = false;
-            
-            // Automatically check the answer once an option is clicked.
             checkAnswer();
         }
 
         /**
-         * Checks the selected answer, provides feedback, and updates the score.
+         * Checks the selected answer and provides feedback.
          */
         function checkAnswer() {
             if (answerChecked) return;
@@ -2057,7 +2111,6 @@
                 btn.disabled = true; 
                 if (btn.textContent === currentQuestion.correctAnswer) {
                     btn.classList.add('correct');
-                    btn.classList.remove('selected');
                 }
             });
 
@@ -2079,12 +2132,7 @@
             }
             
             scoreIndicator.textContent = `To'g'ri: ${score}`;
-
-            if (currentQuestionIndex === questions.length - 1) {
-                nextBtn.textContent = "Natijalarni ko'rish";
-            }
             
-            // Automatically move to the next question or results after a short delay
             setTimeout(() => {
                 currentQuestionIndex++;
                 if (currentQuestionIndex < questions.length) {
@@ -2096,11 +2144,99 @@
         }
         
         /**
-         * Displays the final results screen with a personalized message.
+         * Saves the user's result to Firestore.
+         */
+        async function saveResultToFirestore() {
+            if (!db || !userId) {
+                console.error("Firestore not initialized or user not authenticated.");
+                return;
+            }
+            try {
+                const resultsCollection = collection(db, `/artifacts/${appId}/public/data/quiz_results`);
+                await addDoc(resultsCollection, {
+                    name: userName,
+                    userId: userId,
+                    score: score,
+                    totalQuestions: questions.length,
+                    timestamp: serverTimestamp()
+                });
+                console.log("Result saved to Firestore.");
+            } catch (error) {
+                console.error("Error saving result to Firestore: ", error);
+            }
+        }
+
+        /**
+         * Listens for real-time updates to the leaderboard.
+         */
+        function listenForLeaderboardUpdates() {
+            if (!db) return;
+            const resultsCollection = collection(db, `/artifacts/${appId}/public/data/quiz_results`);
+            const q = query(resultsCollection);
+
+            if (leaderboardUnsubscribe) {
+                leaderboardUnsubscribe(); // Detach previous listener
+            }
+
+            leaderboardUnsubscribe = onSnapshot(q, (snapshot) => {
+                leaderboardLoading.classList.add('hidden');
+                const results = [];
+                snapshot.forEach((doc) => {
+                    results.push(doc.data());
+                });
+
+                // Sort results: higher score is better. If scores are equal, newer result is better.
+                results.sort((a, b) => {
+                    if (b.score !== a.score) {
+                        return b.score - a.score;
+                    }
+                    return (b.timestamp?.seconds || 0) - (a.timestamp?.seconds || 0);
+                });
+                
+                renderLeaderboard(results.slice(0, 10)); // Display top 10
+            }, (error) => {
+                console.error("Error fetching leaderboard: ", error);
+                leaderboardList.innerHTML = `<div class="p-4 text-center text-red-500">Jadvalni yuklashda xatolik yuz berdi.</div>`;
+            });
+        }
+        
+        /**
+         * Renders the leaderboard data to the DOM.
+         */
+        function renderLeaderboard(results) {
+            leaderboardList.innerHTML = ''; // Clear previous list
+            if (results.length === 0) {
+                 leaderboardList.innerHTML = `<div class="p-4 text-center text-gray-500">Hozircha natijalar yo'q.</div>`;
+                 return;
+            }
+            
+            results.forEach((result, index) => {
+                const entry = document.createElement('div');
+                entry.classList.add('leaderboard-entry', 'flex', 'justify-between', 'items-center', 'p-3', 'text-sm');
+                
+                const isCurrentUser = result.userId === userId && result.name === userName;
+
+                entry.innerHTML = `
+                    <div class="flex items-center">
+                        <span class="font-bold w-8 text-center">${index + 1}.</span>
+                        <span class="${isCurrentUser ? 'font-bold text-blue-600 dark:text-blue-400' : ''}">${result.name}</span>
+                    </div>
+                    <div class="font-semibold bg-gray-200 dark:bg-gray-600 px-3 py-1 rounded-full">
+                        ${result.score} / ${result.totalQuestions}
+                    </div>
+                `;
+                leaderboardList.appendChild(entry);
+            });
+        }
+
+
+        /**
+         * Displays the final results screen.
          */
         function showResults() {
             quizScreen.classList.add('hidden');
             resultScreen.classList.remove('hidden');
+            resultHeader.textContent = `${userName}ning Natijasi`;
             finalScore.textContent = `${score} / ${questions.length}`;
 
             const percentage = (score / questions.length) * 100;
@@ -2115,29 +2251,38 @@
                 message = "Tushkunlikka tushmang! Qayta urinib ko'ring va natijangizni yaxshilang.";
             }
             finalMessage.textContent = message;
+            
+            saveResultToFirestore();
         }
         
         /**
-         * Resets the quiz state to show the start screen.
+         * Resets the quiz to the start screen.
          */
         function restartQuiz() {
             resultScreen.classList.add('hidden');
-            startScreen.classList.remove('hidden');
+            nameEntryScreen.classList.remove('hidden');
+            nameInput.value = '';
         }
 
         // --- Event Listeners ---
-        startBtn.addEventListener('click', startQuiz);
-        
-        // This button's main role is now visual, as the logic proceeds automatically
-        nextBtn.addEventListener('click', () => {
-             // The logic now moves automatically, but a click can skip the timeout
-             // This part can be left empty or removed if the button is hidden
+        continueBtn.addEventListener('click', () => {
+            const name = nameInput.value.trim();
+            if (name) {
+                userName = name;
+                nameEntryScreen.classList.add('hidden');
+                startScreen.classList.remove('hidden');
+                welcomeMessage.textContent = `Salom, ${userName}!`;
+            } else {
+                alert("Iltimos, ismingizni kiriting.");
+            }
         });
         
+        startBtn.addEventListener('click', startQuiz);
         restartBtn.addEventListener('click', restartQuiz);
 
         // --- Initialization ---
         function init() {
+            initializeFirebase();
             allQuestions = parseQuestions();
         }
 
@@ -2145,3 +2290,4 @@
     </script>
 </body>
 </html>
+
